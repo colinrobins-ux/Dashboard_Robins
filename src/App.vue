@@ -10,15 +10,17 @@ provide('months', months)
 
 <template>
   <v-app>
-    <v-app-bar color="primary" dark elevated>
-      <v-toolbar-title>My Dashboard</v-toolbar-title>
+    <v-app-bar height="64" dark flat style="background: linear-gradient(90deg,#5b3cff 0%, #6a4cff 100%);">
+      <v-toolbar-title class="text-subtitle-1 hide-on-mobile" style="font-weight:600; letter-spacing:0.2px">My Dashboard</v-toolbar-title>
+      <v-toolbar-title class="text-subtitle-1 show-on-mobile" style="font-weight:600; letter-spacing:0.2px; font-size:16px; display:none">Dashboard</v-toolbar-title>
       <v-spacer />
       <v-select
         v-model="selectedMonth"
         :items="months"
         dense
         hide-details
-        style="max-width: 200px"
+        style="max-width: 220px"
+        class="month-select"
       />
     </v-app-bar>
 

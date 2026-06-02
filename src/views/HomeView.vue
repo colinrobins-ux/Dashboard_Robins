@@ -50,23 +50,93 @@ const conversionsSeries = computed(() => ({
   ],
 })) as unknown as ChartData<'line', number[], string>
 
+function handleChartClick(evt: any, elements: any, series: any) {
+  try {
+    if (!elements || !elements.length) return
+    const el = elements[0]
+    const idx = el.index
+    const month = (series.value.labels as any)[idx]
+    if (!month) return
+    selectedMonth.value = selectedMonth.value === month ? 'All' : month
+  } catch (e) {
+    // ignore
+  }
+}
+
 const revenueOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label(context: any) {
+          const v = context.parsed && context.parsed.y != null ? context.parsed.y : context.raw
+          return formatMoney(v)
+        },
+      },
+    },
+  },
+  onClick(evt: any, elements: any) {
+    handleChartClick(evt, elements, revenueSeries)
+  },
+  onHover(evt: any, elements: any) {
+    try {
+      const target = evt?.native?.target || evt?.target
+      if (target) target.style.cursor = elements && elements.length ? 'pointer' : 'default'
+    } catch (e) {}
+  },
 }
 
 const visitorsOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label(context: any) {
+          const v = context.parsed && context.parsed.y != null ? context.parsed.y : context.raw
+          return v.toLocaleString()
+        },
+      },
+    },
+  },
+  onClick(evt: any, elements: any) {
+    handleChartClick(evt, elements, visitorsSeries)
+  },
+  onHover(evt: any, elements: any) {
+    try {
+      const target = evt?.native?.target || evt?.target
+      if (target) target.style.cursor = elements && elements.length ? 'pointer' : 'default'
+    } catch (e) {}
+  },
 }
 
 const conversionsOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label(context: any) {
+          const v = context.parsed && context.parsed.y != null ? context.parsed.y : context.raw
+          return v + '%'
+        },
+      },
+    },
+  },
   scales: { y: { ticks: { callback: (v: any) => v + '%' } } },
+  onClick(evt: any, elements: any) {
+    handleChartClick(evt, elements, conversionsSeries)
+  },
+  onHover(evt: any, elements: any) {
+    try {
+      const target = evt?.native?.target || evt?.target
+      if (target) target.style.cursor = elements && elements.length ? 'pointer' : 'default'
+    } catch (e) {}
+  },
 }
 
 function formatMoney(n: number) {
@@ -116,7 +186,7 @@ const ordersChange = computed(() => changeForMetric('orders'))
   <v-container fluid>
     <v-row>
       <v-col cols="12">
-        <v-sheet class="pa-6" elevation="3">
+        <v-sheet class="pa-6 compact-sheet" elevation="3">
           <div class="dashboard-header">
             <h1>My Dashboard</h1>
             <p class="subtitle-1">Monthly business metrics — select a month to filter.</p>
@@ -125,7 +195,7 @@ const ordersChange = computed(() => changeForMetric('orders'))
           <!-- Summary cards -->
           <v-row class="mt-6" dense>
             <v-col cols="12" sm="6" md="3">
-              <v-card>
+              <v-card class="summary-card">
                 <v-card-title>Revenue</v-card-title>
                 <v-card-text>
                   <div class="text-h5">{{ formatMoney(summary.totalRevenue) }}</div>
@@ -138,7 +208,7 @@ const ordersChange = computed(() => changeForMetric('orders'))
             </v-col>
 
             <v-col cols="12" sm="6" md="3">
-              <v-card>
+              <v-card class="summary-card">
                 <v-card-title>Visitors</v-card-title>
                 <v-card-text>
                   <div class="text-h5">{{ summary.totalVisitors.toLocaleString() }}</div>
@@ -151,7 +221,7 @@ const ordersChange = computed(() => changeForMetric('orders'))
             </v-col>
 
             <v-col cols="12" sm="6" md="3">
-              <v-card>
+              <v-card class="summary-card">
                 <v-card-title>Conversions</v-card-title>
                 <v-card-text>
                   <div class="text-h5">{{ Math.round(summary.avgConversion * 10000) / 100 }}%</div>
@@ -164,7 +234,7 @@ const ordersChange = computed(() => changeForMetric('orders'))
             </v-col>
 
             <v-col cols="12" sm="6" md="3">
-              <v-card>
+              <v-card class="summary-card">
                 <v-card-title>Orders</v-card-title>
                 <v-card-text>
                   <div class="text-h5">{{ summary.totalOrders.toLocaleString() }}</div>
@@ -227,4 +297,30 @@ const ordersChange = computed(() => changeForMetric('orders'))
 
 .text-success { color: #66bb6a }
 .text-error { color: #ef5350 }
+
+.summary-card {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.summary-card .v-card__title {
+  font-weight: 600;
+}
+
+/* compact sheet adjustments for small screens */
+@media (max-width: 600px) {
+  .compact-sheet { padding: 16px !important }
+  .summary-card { padding: 12px }
+  .v-card__title { font-size: 14px }
+  .text-h5 { font-size: 18px }
+  .month-select { max-width: 140px !important }
+  .hide-on-mobile { display: inline-flex }
+  .show-on-mobile { display: inline-flex }
+}
+
+@media (max-width: 400px) {
+  .hide-on-mobile { display: none }
+  .show-on-mobile { display: inline-flex }
+}
 </style>
