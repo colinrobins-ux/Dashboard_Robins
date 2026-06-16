@@ -143,6 +143,50 @@ function formatMoney(n: number) {
   return n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 }
 
+// Logistics-specific synthetic monthly data (realistic-looking, tells a story)
+const logistics = [
+  { month: 'Jan 2025', shipments: 18000, onTime: 0.88, openExceptions: 420, regions: { 'North America': 0.43, EMEA: 0.28, APAC: 0.22, LATAM: 0.07 } },
+  { month: 'Feb 2025', shipments: 18500, onTime: 0.89, openExceptions: 390, regions: { 'North America': 0.42, EMEA: 0.29, APAC: 0.22, LATAM: 0.07 } },
+  { month: 'Mar 2025', shipments: 19500, onTime: 0.90, openExceptions: 360, regions: { 'North America': 0.41, EMEA: 0.30, APAC: 0.23, LATAM: 0.06 } },
+  { month: 'Apr 2025', shipments: 20500, onTime: 0.915, openExceptions: 300, regions: { 'North America': 0.41, EMEA: 0.30, APAC: 0.24, LATAM: 0.05 } },
+  { month: 'May 2025', shipments: 22000, onTime: 0.92, openExceptions: 260, regions: { 'North America': 0.40, EMEA: 0.30, APAC: 0.25, LATAM: 0.05 } },
+  { month: 'Jun 2025', shipments: 24000, onTime: 0.935, openExceptions: 220, regions: { 'North America': 0.40, EMEA: 0.29, APAC: 0.26, LATAM: 0.05 } },
+  { month: 'Jul 2025', shipments: 26000, onTime: 0.94, openExceptions: 200, regions: { 'North America': 0.41, EMEA: 0.28, APAC: 0.26, LATAM: 0.05 } },
+  { month: 'Aug 2025', shipments: 28000, onTime: 0.945, openExceptions: 180, regions: { 'North America': 0.42, EMEA: 0.28, APAC: 0.25, LATAM: 0.05 } },
+  { month: 'Sep 2025', shipments: 27000, onTime: 0.905, openExceptions: 320, regions: { 'North America': 0.40, EMEA: 0.30, APAC: 0.24, LATAM: 0.06 } },
+  { month: 'Oct 2025', shipments: 25000, onTime: 0.92, openExceptions: 240, regions: { 'North America': 0.41, EMEA: 0.29, APAC: 0.25, LATAM: 0.05 } },
+  { month: 'Nov 2025', shipments: 24000, onTime: 0.93, openExceptions: 200, regions: { 'North America': 0.42, EMEA: 0.29, APAC: 0.24, LATAM: 0.05 } },
+  { month: 'Dec 2025', shipments: 33000, onTime: 0.94, openExceptions: 180, regions: { 'North America': 0.44, EMEA: 0.27, APAC: 0.24, LATAM: 0.05 } },
+]
+
+const logisticsMonths = logistics.map((l: any) => l.month)
+
+const logisticsByMonth = (m: string) => logistics.find((l: any) => l.month === m)
+
+const logisticsSelected = computed(() => {
+  if (!selectedMonth || selectedMonth.value === 'All') return logistics[logistics.length - 1]
+  return logisticsByMonth(selectedMonth.value) || logistics[logistics.length - 1]
+})
+
+function formatNumber(n: number) { return n.toLocaleString() }
+
+const logisticsChange = (key: 'shipments' | 'onTime' | 'openExceptions') => {
+  const idx = logistics.findIndex((l: any) => l.month === logisticsSelected.value.month)
+  if (idx <= 0) return { diff: 0, pct: 0, up: true }
+  const cur = (logistics as any)[idx][key]
+  const prev = (logistics as any)[idx - 1][key]
+  const diff = cur - prev
+  const pct = prev ? Math.round((diff / prev) * 100) : 0
+  return { diff, pct, up: diff >= 0 }
+}
+
+const regionsSorted = computed(() => {
+  const r = logisticsSelected.value?.regions || {}
+  return Object.entries(r).map(([k, v]) => ({ region: k, pct: Math.round((v as number) * 100) })).sort((a: any, b: any) => b.pct - a.pct)
+})
+
+
+
 const summary = computed(() => {
   const data = filtered.value
   const totalRevenue = data.reduce((s: number, r: any) => s + r.revenue, 0)
@@ -188,20 +232,20 @@ const ordersChange = computed(() => changeForMetric('orders'))
       <v-col cols="12">
         <v-sheet class="pa-6 compact-sheet" elevation="3">
           <div class="dashboard-header">
-            <h1>My Dashboard</h1>
+            <h1>FastForward Logistics Dashboard</h1>
             <p class="subtitle-1">Monthly business metrics — select a month to filter.</p>
           </div>
 
-          <!-- Summary cards -->
+          <!-- Logistics summary cards -->
           <v-row class="mt-6" dense>
             <v-col cols="12" sm="6" md="3">
               <v-card class="summary-card">
-                <v-card-title>Revenue</v-card-title>
+                <v-card-title>Shipment Volume</v-card-title>
                 <v-card-text>
-                  <div class="text-h5">{{ formatMoney(summary.totalRevenue) }}</div>
-                  <div class="caption" :class="revenueChange.up ? 'text-success' : 'text-error'">
-                    <v-icon small>{{ revenueChange.up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
-                    {{ revenueChange.pct }}% vs previous month
+                  <div class="text-h5">{{ formatNumber(logisticsSelected.shipments) }} shipments</div>
+                  <div class="caption" :class="logisticsChange('shipments').up ? 'text-success' : 'text-error'">
+                    <v-icon small>{{ logisticsChange('shipments').up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
+                    {{ logisticsChange('shipments').pct }}% vs previous month
                   </div>
                 </v-card-text>
               </v-card>
@@ -209,12 +253,12 @@ const ordersChange = computed(() => changeForMetric('orders'))
 
             <v-col cols="12" sm="6" md="3">
               <v-card class="summary-card">
-                <v-card-title>Visitors</v-card-title>
+                <v-card-title>On-time Delivery</v-card-title>
                 <v-card-text>
-                  <div class="text-h5">{{ summary.totalVisitors.toLocaleString() }}</div>
-                  <div class="caption" :class="visitorsChange.up ? 'text-success' : 'text-error'">
-                    <v-icon small>{{ visitorsChange.up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
-                    {{ visitorsChange.pct }}% vs previous month
+                  <div class="text-h5">{{ (logisticsSelected.onTime * 100).toFixed(1) }}%</div>
+                  <div class="caption" :class="logisticsChange('onTime').up ? 'text-success' : 'text-error'">
+                    <v-icon small>{{ logisticsChange('onTime').up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
+                    {{ logisticsChange('onTime').pct }}% vs previous month
                   </div>
                 </v-card-text>
               </v-card>
@@ -222,12 +266,15 @@ const ordersChange = computed(() => changeForMetric('orders'))
 
             <v-col cols="12" sm="6" md="3">
               <v-card class="summary-card">
-                <v-card-title>Conversions</v-card-title>
+                <v-card-title>Regional Performance</v-card-title>
                 <v-card-text>
-                  <div class="text-h5">{{ Math.round(summary.avgConversion * 10000) / 100 }}%</div>
-                  <div class="caption" :class="conversionsChange.up ? 'text-success' : 'text-error'">
-                    <v-icon small>{{ conversionsChange.up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
-                    {{ conversionsChange.pct }}% vs previous month
+                  <div class="text-subtitle-2">Top region: {{ regionsSorted[0].region }} — {{ regionsSorted[0].pct }}%</div>
+                  <div class="caption" style="margin-top:8px">Breakdown</div>
+                  <div style="display:flex; gap:12px; margin-top:8px">
+                    <div v-for="r in regionsSorted" :key="r.region" style="min-width:72px">
+                      <div class="caption">{{ r.region }}</div>
+                      <div class="text-h6">{{ r.pct }}%</div>
+                    </div>
                   </div>
                 </v-card-text>
               </v-card>
@@ -235,12 +282,12 @@ const ordersChange = computed(() => changeForMetric('orders'))
 
             <v-col cols="12" sm="6" md="3">
               <v-card class="summary-card">
-                <v-card-title>Orders</v-card-title>
+                <v-card-title>Open Exceptions</v-card-title>
                 <v-card-text>
-                  <div class="text-h5">{{ summary.totalOrders.toLocaleString() }}</div>
-                  <div class="caption" :class="ordersChange.up ? 'text-success' : 'text-error'">
-                    <v-icon small>{{ ordersChange.up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
-                    {{ ordersChange.pct }}% vs previous month
+                  <div class="text-h5">{{ formatNumber(logisticsSelected.openExceptions) }}</div>
+                  <div class="caption" :class="logisticsChange('openExceptions').up ? 'text-error' : 'text-success'">
+                    <v-icon small>{{ logisticsChange('openExceptions').up ? 'mdi-alert' : 'mdi-check' }}</v-icon>
+                    {{ logisticsChange('openExceptions').pct }}% vs previous month
                   </div>
                 </v-card-text>
               </v-card>

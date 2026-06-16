@@ -11,7 +11,7 @@ provide('months', months)
 <template>
   <v-app>
     <v-app-bar height="64" dark flat style="background: linear-gradient(90deg,#5b3cff 0%, #6a4cff 100%);">
-      <v-toolbar-title class="text-subtitle-1 hide-on-mobile" style="font-weight:600; letter-spacing:0.2px">My Dashboard</v-toolbar-title>
+      <v-toolbar-title class="text-subtitle-1 hide-on-mobile" style="font-weight:600; letter-spacing:0.2px">FastForward Logistics Dashboard</v-toolbar-title>
       <v-toolbar-title class="text-subtitle-1 show-on-mobile" style="font-weight:600; letter-spacing:0.2px; font-size:16px; display:none">Dashboard</v-toolbar-title>
       <v-spacer />
       <v-select

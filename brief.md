@@ -1,4 +1,4 @@
-# My Dashboard - Projected Brief
+# FastForward Logistics Dashboard - Projected Brief
 
 ## What is this?
 A single-page analytics dashboard showing monthly business metrics. Think shopify admin or a simple google analytics view.
