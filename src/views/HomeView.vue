@@ -13,26 +13,33 @@ const filtered = computed(() => {
   return metrics.filter((m: any) => m.month === selectedMonth.value)
 })
 
-const revenueSeries = computed(() => ({
-  labels: metrics.map((m: any) => m.month),
+const yearStartMonth = 'Jun 2025'
+const yearLogistics = logistics.slice(logistics.findIndex((l: any) => l.month === yearStartMonth))
+
+const shipmentVolumeSeries = computed(() => ({
+  labels: yearLogistics.map((m: any) => m.month),
   datasets: [
     {
-      label: 'Revenue',
-      backgroundColor: metrics.map((m: any) => (selectedMonth && selectedMonth.value === m.month ? '#ffd54f' : '#7c4dff')),
-      data: metrics.map((m: any) => m.revenue),
+      label: 'Shipment Volume',
+      borderColor: '#5c6bc0',
+      backgroundColor: 'rgba(92,107,192,0.18)',
+      data: yearLogistics.map((m: any) => m.shipments),
+      fill: true,
+      tension: 0.35,
     },
   ],
-})) as unknown as ChartData<'bar', number[], string>
+})) as unknown as ChartData<'line', number[], string>
 
-const visitorsSeries = computed(() => ({
-  labels: metrics.map((m: any) => m.month),
+const onTimeDeliverySeries = computed(() => ({
+  labels: yearLogistics.map((m: any) => m.month),
   datasets: [
     {
-      label: 'Visitors',
-      borderColor: '#4fc3f7',
-      backgroundColor: 'rgba(79,195,247,0.12)',
-      data: metrics.map((m: any) => m.visitors),
+      label: 'On-time Delivery',
+      borderColor: '#26a69a',
+      backgroundColor: 'rgba(38,166,154,0.18)',
+      data: yearLogistics.map((m: any) => Math.round(m.onTime * 1000) / 10),
       fill: false,
+      tension: 0.35,
     },
   ],
 })) as unknown as ChartData<'line', number[], string>
@@ -63,7 +70,7 @@ function handleChartClick(evt: any, elements: any, series: any) {
   }
 }
 
-const revenueOptions: any = {
+const shipmentOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -72,13 +79,13 @@ const revenueOptions: any = {
       callbacks: {
         label(context: any) {
           const v = context.parsed && context.parsed.y != null ? context.parsed.y : context.raw
-          return formatMoney(v)
+          return `${v.toLocaleString()} shipments`
         },
       },
     },
   },
   onClick(evt: any, elements: any) {
-    handleChartClick(evt, elements, revenueSeries)
+    handleChartClick(evt, elements, shipmentVolumeSeries)
   },
   onHover(evt: any, elements: any) {
     try {
@@ -88,7 +95,7 @@ const revenueOptions: any = {
   },
 }
 
-const visitorsOptions: any = {
+const onTimeOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -97,13 +104,14 @@ const visitorsOptions: any = {
       callbacks: {
         label(context: any) {
           const v = context.parsed && context.parsed.y != null ? context.parsed.y : context.raw
-          return v.toLocaleString()
+          return `${v.toFixed(1)}% on-time`
         },
       },
     },
   },
+  scales: { y: { ticks: { callback: (v: any) => `${v}%` } } },
   onClick(evt: any, elements: any) {
-    handleChartClick(evt, elements, visitorsSeries)
+    handleChartClick(evt: any, elements: any, onTimeDeliverySeries)
   },
   onHover(evt: any, elements: any) {
     try {
@@ -158,6 +166,9 @@ const logistics = [
   { month: 'Nov 2025', shipments: 24000, onTime: 0.93, openExceptions: 200, regions: { 'North America': 0.42, EMEA: 0.29, APAC: 0.24, LATAM: 0.05 } },
   { month: 'Dec 2025', shipments: 33000, onTime: 0.94, openExceptions: 180, regions: { 'North America': 0.44, EMEA: 0.27, APAC: 0.24, LATAM: 0.05 } },
 ]
+
+const yearStartMonth = 'Jun 2025'
+const yearLogistics = logistics.slice(logistics.findIndex((l: any) => l.month === yearStartMonth))
 
 const logisticsMonths = logistics.map((l: any) => l.month)
 
@@ -298,18 +309,18 @@ const ordersChange = computed(() => changeForMetric('orders'))
           <v-row class="mt-6" dense>
             <v-col cols="12" md="6">
               <v-card outlined height="320">
-                <v-card-title>Monthly Revenue</v-card-title>
+                <v-card-title>Shipment Volume</v-card-title>
                 <v-card-text style="height:260px">
-                  <Bar :data="revenueSeries" :options="revenueOptions" />
+                  <Line :data="shipmentVolumeSeries" :options="shipmentOptions" />
                 </v-card-text>
               </v-card>
             </v-col>
 
             <v-col cols="12" md="6">
               <v-card outlined height="320">
-                <v-card-title>Visitors Over Time</v-card-title>
+                <v-card-title>On-time Delivery</v-card-title>
                 <v-card-text style="height:260px">
-                  <Line :data="visitorsSeries" :options="visitorsOptions" />
+                  <Line :data="onTimeDeliverySeries" :options="onTimeOptions" />
                 </v-card-text>
               </v-card>
             </v-col>

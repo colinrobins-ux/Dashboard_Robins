@@ -54,9 +54,3 @@ Notes:
 - Suggested contribution areas: data integrations (APIs), additional charts, improved accessibility, tests, and CI build steps.
 
 ---
-
-If you'd like, I can also:
-
-- Add unit or integration tests,
-- Hook the dashboard to a mock API for live-like data,
-- Or commit these README changes and create a release note.
