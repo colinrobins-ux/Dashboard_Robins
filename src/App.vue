@@ -3,7 +3,7 @@ import { ref, provide } from 'vue'
 import metrics from './data/metrics.json'
 
 const months = ['All', ...metrics.map((m: any) => m.month)]
-const selectedMonth = ref<string>('All')
+const selectedMonth = ref<string>('May 2025')
 provide('selectedMonth', selectedMonth)
 provide('months', months)
 </script>

@@ -14,14 +14,26 @@ const filtered = computed(() => {
   return metrics.filter((m: any) => m.month === selectedMonth.value)
 })
 
+const trendStartMonth = computed(() => {
+  if (!selectedMonth || !selectedMonth.value || selectedMonth.value === 'All') return 'May 2025'
+  return selectedMonth.value
+})
+
+const trendLogistics = computed(() => {
+  const startMonth = trendStartMonth.value
+  const startIndex = logistics.findIndex((l: any) => l.month === startMonth)
+  if (startIndex < 0) return logistics.slice(logistics.findIndex((l: any) => l.month === 'May 2025'))
+  return logistics.slice(startIndex)
+})
+
 const shipmentVolumeSeries = computed(() => ({
-  labels: yearLogistics.map((m: any) => m.month),
+  labels: trendLogistics.value.map((m: any) => m.month),
   datasets: [
     {
       label: 'Shipment Volume',
       borderColor: '#5c6bc0',
       backgroundColor: 'rgba(92,107,192,0.18)',
-      data: yearLogistics.map((m: any) => m.shipments),
+      data: trendLogistics.value.map((m: any) => m.shipments),
       fill: true,
       tension: 0.35,
     },
@@ -29,14 +41,28 @@ const shipmentVolumeSeries = computed(() => ({
 })) as unknown as ChartData<'line', number[], string>
 
 const onTimeDeliverySeries = computed(() => ({
-  labels: yearLogistics.map((m: any) => m.month),
+  labels: trendLogistics.value.map((m: any) => m.month),
   datasets: [
     {
       label: 'On-time Delivery',
       borderColor: '#26a69a',
       backgroundColor: 'rgba(38,166,154,0.18)',
-      data: yearLogistics.map((m: any) => Math.round(m.onTime * 1000) / 10),
+      data: trendLogistics.value.map((m: any) => Math.round(m.onTime * 100)),
       fill: false,
+      tension: 0.35,
+    },
+  ],
+})) as unknown as ChartData<'line', number[], string>
+
+const openExceptionsSeries = computed(() => ({
+  labels: trendLogistics.value.map((m: any) => m.month),
+  datasets: [
+    {
+      label: 'Open Exceptions',
+      borderColor: '#ef5350',
+      backgroundColor: 'rgba(239,83,80,0.14)',
+      data: trendLogistics.value.map((m: any) => m.openExceptions),
+      fill: true,
       tension: 0.35,
     },
   ],
@@ -80,6 +106,10 @@ const shipmentOptions: any = {
       },
     },
   },
+  scales: {
+    x: { ticks: { maxRotation: 0, autoSkip: true } },
+    y: { beginAtZero: true }
+  },
   onClick(evt: any, elements: any) {
     handleChartClick(evt, elements, shipmentVolumeSeries)
   },
@@ -105,9 +135,38 @@ const onTimeOptions: any = {
       },
     },
   },
-  scales: { y: { ticks: { callback: (v: any) => `${v}%` } } },
+  scales: {
+    x: { ticks: { maxRotation: 0, autoSkip: true } },
+    y: { beginAtZero: true, ticks: { callback: (v: any) => `${v}%` } }
+  },
   onClick(evt: any, elements: any) {
     handleChartClick(evt, elements, onTimeDeliverySeries)
+  },
+  onHover(evt: any, elements: any) {
+    try {
+      const target = evt?.native?.target || evt?.target
+      if (target) target.style.cursor = elements && elements.length ? 'pointer' : 'default'
+    } catch (e) {}
+  },
+}
+
+const openExceptionsOptions: any = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label(context: any) {
+          const v = context.parsed && context.parsed.y != null ? context.parsed.y : context.raw
+          return `${v.toLocaleString()} exceptions`
+        },
+      },
+    },
+  },
+  scales: {
+    x: { ticks: { maxRotation: 0, autoSkip: true } },
+    y: { beginAtZero: true }
   },
   onHover(evt: any, elements: any) {
     try {
@@ -236,49 +295,46 @@ const ordersChange = computed(() => changeForMetric('orders'))
               <p class="subtitle-1">Monthly business metrics — select a month to filter.</p>
             </div>
             <v-select
-              v-model="selectedMonth.value"
+              :model-value="selectedMonth?.value"
               :items="monthOptions"
               label="Month"
               density="compact"
               variant="outlined"
               hide-details
               class="month-filter"
+              @update:model-value="(value: string) => selectedMonth && (selectedMonth.value = value)"
             />
           </div>
 
           <!-- Logistics summary cards -->
           <v-row class="mt-6" dense>
             <v-col cols="12" sm="6" md="6">
-              <v-card class="summary-card">
+              <v-card class="summary-card chart-card">
                 <v-card-title>Shipment Volume</v-card-title>
                 <v-card-text>
-                  <div class="text-h5">{{ formatNumber(logisticsSelected.shipments) }} shipments</div>
-                  <div class="caption" :class="logisticsChange('shipments').up ? 'text-success' : 'text-error'">
-                    <v-icon small>{{ logisticsChange('shipments').up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
-                    {{ logisticsChange('shipments').pct }}% vs previous month
+                  <div class="chart-panel">
+                    <Line :data="shipmentVolumeSeries" :options="shipmentOptions" />
                   </div>
                 </v-card-text>
               </v-card>
             </v-col>
 
             <v-col cols="12" sm="6" md="6">
-              <v-card class="summary-card">
+              <v-card class="summary-card chart-card">
                 <v-card-title>On-time Delivery</v-card-title>
                 <v-card-text>
-                  <div class="text-h5">{{ (logisticsSelected.onTime * 100).toFixed(1) }}%</div>
-                  <div class="caption" :class="logisticsChange('onTime').up ? 'text-success' : 'text-error'">
-                    <v-icon small>{{ logisticsChange('onTime').up ? 'mdi-arrow-up' : 'mdi-arrow-down' }}</v-icon>
-                    {{ logisticsChange('onTime').pct }}% vs previous month
+                  <div class="chart-panel">
+                    <Line :data="onTimeDeliverySeries" :options="onTimeOptions" />
                   </div>
                 </v-card-text>
               </v-card>
             </v-col>
 
             <v-col cols="12" sm="6" md="6">
-              <v-card class="summary-card">
+              <v-card class="summary-card chart-card">
                 <v-card-title>Regional Performance</v-card-title>
                 <v-card-text>
-                  <div style="height:220px">
+                  <div class="chart-panel">
                     <Pie :data="regionalPerformanceSeries" :options="regionalPerformanceOptions" />
                   </div>
                 </v-card-text>
@@ -286,13 +342,11 @@ const ordersChange = computed(() => changeForMetric('orders'))
             </v-col>
 
             <v-col cols="12" sm="6" md="6">
-              <v-card class="summary-card">
+              <v-card class="summary-card chart-card">
                 <v-card-title>Open Exceptions</v-card-title>
                 <v-card-text>
-                  <div class="text-h5">{{ formatNumber(logisticsSelected.openExceptions) }}</div>
-                  <div class="caption" :class="logisticsChange('openExceptions').up ? 'text-error' : 'text-success'">
-                    <v-icon small>{{ logisticsChange('openExceptions').up ? 'mdi-alert' : 'mdi-check' }}</v-icon>
-                    {{ logisticsChange('openExceptions').pct }}% vs previous month
+                  <div class="chart-panel">
+                    <Line :data="openExceptionsSeries" :options="openExceptionsOptions" />
                   </div>
                 </v-card-text>
               </v-card>
@@ -362,6 +416,14 @@ const ordersChange = computed(() => changeForMetric('orders'))
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 10px;
   box-shadow: none;
+}
+
+.chart-card {
+  height: 360px;
+}
+
+.chart-panel {
+  height: 260px;
 }
 
 .summary-card .v-card__title {

@@ -11,6 +11,9 @@ import {
   BarElement,
   BarController,
   LineController,
+  ArcElement,
+  DoughnutController,
+  PieController,
 } from 'chart.js'
 
 // Register all chart elements we'll use across components
@@ -26,6 +29,9 @@ ChartJS.register(
   BarElement,
   BarController,
   LineController,
+  ArcElement,
+  DoughnutController,
+  PieController,
 )
 
 export default ChartJS
