@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { inject, computed } from 'vue'
 import metrics from '../data/metrics.json'
-import { Bar, Line } from 'vue-chartjs'
-import type { ChartData, ChartOptions } from 'chart.js'
+import { Line, Pie } from 'vue-chartjs'
+import type { ChartData } from 'chart.js'
 
 const selectedMonth = inject<any>('selectedMonth')
+const monthOptions = inject<any>('months', ['All'])
 
 const months = metrics.map((m: any) => m.month)
 
@@ -12,9 +13,6 @@ const filtered = computed(() => {
   if (!selectedMonth || selectedMonth.value === 'All') return metrics
   return metrics.filter((m: any) => m.month === selectedMonth.value)
 })
-
-const yearStartMonth = 'Jun 2025'
-const yearLogistics = logistics.slice(logistics.findIndex((l: any) => l.month === yearStartMonth))
 
 const shipmentVolumeSeries = computed(() => ({
   labels: yearLogistics.map((m: any) => m.month),
@@ -44,18 +42,16 @@ const onTimeDeliverySeries = computed(() => ({
   ],
 })) as unknown as ChartData<'line', number[], string>
 
-const conversionsSeries = computed(() => ({
-  labels: metrics.map((m: any) => m.month),
+const regionalPerformanceSeries = computed(() => ({
+  labels: regionsSorted.value.map((r: any) => r.region),
   datasets: [
     {
-      label: 'Conversions',
-      borderColor: '#66bb6a',
-      backgroundColor: 'rgba(102,187,106,0.18)',
-      data: metrics.map((m: any) => Math.round(m.conversions * 10000) / 100),
-      fill: true,
+      data: regionsSorted.value.map((r: any) => r.pct),
+      backgroundColor: ['#4fc3f7', '#66bb6a', '#ffb74d', '#7e57c2'],
+      hoverOffset: 8,
     },
   ],
-})) as unknown as ChartData<'line', number[], string>
+})) as unknown as ChartData<'pie', number[], string>
 
 function handleChartClick(evt: any, elements: any, series: any) {
   try {
@@ -111,7 +107,7 @@ const onTimeOptions: any = {
   },
   scales: { y: { ticks: { callback: (v: any) => `${v}%` } } },
   onClick(evt: any, elements: any) {
-    handleChartClick(evt: any, elements: any, onTimeDeliverySeries)
+    handleChartClick(evt, elements, onTimeDeliverySeries)
   },
   onHover(evt: any, elements: any) {
     try {
@@ -121,23 +117,19 @@ const onTimeOptions: any = {
   },
 }
 
-const conversionsOptions: any = {
+const regionalPerformanceOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: { display: false },
+    legend: { position: 'bottom' },
     tooltip: {
       callbacks: {
         label(context: any) {
           const v = context.parsed && context.parsed.y != null ? context.parsed.y : context.raw
-          return v + '%'
+          return `${context.label}: ${v}%`
         },
       },
     },
-  },
-  scales: { y: { ticks: { callback: (v: any) => v + '%' } } },
-  onClick(evt: any, elements: any) {
-    handleChartClick(evt, elements, conversionsSeries)
   },
   onHover(evt: any, elements: any) {
     try {
@@ -145,10 +137,6 @@ const conversionsOptions: any = {
       if (target) target.style.cursor = elements && elements.length ? 'pointer' : 'default'
     } catch (e) {}
   },
-}
-
-function formatMoney(n: number) {
-  return n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 }
 
 // Logistics-specific synthetic monthly data (realistic-looking, tells a story)
@@ -243,13 +231,24 @@ const ordersChange = computed(() => changeForMetric('orders'))
       <v-col cols="12">
         <v-sheet class="pa-6 compact-sheet" elevation="3">
           <div class="dashboard-header">
-            <h1>FastForward Logistics Dashboard</h1>
-            <p class="subtitle-1">Monthly business metrics — select a month to filter.</p>
+            <div class="dashboard-header-content">
+              <h1>FastForward Logistics Dashboard</h1>
+              <p class="subtitle-1">Monthly business metrics — select a month to filter.</p>
+            </div>
+            <v-select
+              v-model="selectedMonth.value"
+              :items="monthOptions"
+              label="Month"
+              density="compact"
+              variant="outlined"
+              hide-details
+              class="month-filter"
+            />
           </div>
 
           <!-- Logistics summary cards -->
           <v-row class="mt-6" dense>
-            <v-col cols="12" sm="6" md="3">
+            <v-col cols="12" sm="6" md="6">
               <v-card class="summary-card">
                 <v-card-title>Shipment Volume</v-card-title>
                 <v-card-text>
@@ -262,7 +261,7 @@ const ordersChange = computed(() => changeForMetric('orders'))
               </v-card>
             </v-col>
 
-            <v-col cols="12" sm="6" md="3">
+            <v-col cols="12" sm="6" md="6">
               <v-card class="summary-card">
                 <v-card-title>On-time Delivery</v-card-title>
                 <v-card-text>
@@ -275,23 +274,18 @@ const ordersChange = computed(() => changeForMetric('orders'))
               </v-card>
             </v-col>
 
-            <v-col cols="12" sm="6" md="3">
+            <v-col cols="12" sm="6" md="6">
               <v-card class="summary-card">
                 <v-card-title>Regional Performance</v-card-title>
                 <v-card-text>
-                  <div class="text-subtitle-2">Top region: {{ regionsSorted[0].region }} — {{ regionsSorted[0].pct }}%</div>
-                  <div class="caption" style="margin-top:8px">Breakdown</div>
-                  <div style="display:flex; gap:12px; margin-top:8px">
-                    <div v-for="r in regionsSorted" :key="r.region" style="min-width:72px">
-                      <div class="caption">{{ r.region }}</div>
-                      <div class="text-h6">{{ r.pct }}%</div>
-                    </div>
+                  <div style="height:220px">
+                    <Pie :data="regionalPerformanceSeries" :options="regionalPerformanceOptions" />
                   </div>
                 </v-card-text>
               </v-card>
             </v-col>
 
-            <v-col cols="12" sm="6" md="3">
+            <v-col cols="12" sm="6" md="6">
               <v-card class="summary-card">
                 <v-card-title>Open Exceptions</v-card-title>
                 <v-card-text>
@@ -326,16 +320,6 @@ const ordersChange = computed(() => changeForMetric('orders'))
             </v-col>
           </v-row>
 
-          <v-row class="mt-6" dense>
-            <v-col cols="12">
-              <v-card outlined>
-                <v-card-title>Conversions Trend</v-card-title>
-                <v-card-text style="height:260px">
-                  <Line :data="conversionsSeries" :options="conversionsOptions" />
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
         </v-sheet>
       </v-col>
     </v-row>
@@ -343,6 +327,19 @@ const ordersChange = computed(() => changeForMetric('orders'))
 </template>
 
 <style scoped>
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard-header-content {
+  flex: 1;
+  min-width: 220px;
+}
+
 .dashboard-header h1 {
   margin: 0;
   font-weight: 600;
@@ -351,6 +348,11 @@ const ordersChange = computed(() => changeForMetric('orders'))
 .dashboard-header p {
   margin-top: 12px;
   color: rgba(255,255,255,0.7);
+}
+
+.month-filter {
+  max-width: 220px;
+  min-width: 180px;
 }
 
 .text-success { color: #66bb6a }

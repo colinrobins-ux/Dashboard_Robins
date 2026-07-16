@@ -11,7 +11,7 @@ Generate a fake dataset as a JSON file (src/data/metrics.json).
 - conversions (percentage, fluctuated between 205%)
 - orders (numbers, correlates loosely with )
 
-##Layout (vuetify)
+## Layout (vuetify)
 - v-app-bar at teh top with dashboard title and a month picker
 - the month picker should defaulte to showing all months
 - when a specific momnth is selected, all cards and charts filter to that month. When :all" is selected, show the full year.
