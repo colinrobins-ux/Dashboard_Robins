@@ -289,22 +289,6 @@ const ordersChange = computed(() => changeForMetric('orders'))
     <v-row>
       <v-col cols="12">
         <v-sheet class="pa-6 compact-sheet" elevation="3">
-          <div class="dashboard-header">
-            <div class="dashboard-header-content">
-              <h1>FastForward Logistics Dashboard</h1>
-              <p class="subtitle-1">Monthly business metrics — select a month to filter.</p>
-            </div>
-            <v-select
-              :model-value="selectedMonth?.value"
-              :items="monthOptions"
-              label="Month"
-              density="compact"
-              variant="outlined"
-              hide-details
-              class="month-filter"
-              @update:model-value="(value: string) => selectedMonth && (selectedMonth.value = value)"
-            />
-          </div>
 
           <!-- Logistics summary cards -->
           <v-row class="mt-6" dense>

@@ -11,17 +11,21 @@ provide('months', months)
 <template>
   <v-app>
     <v-app-bar height="64" dark flat style="background: linear-gradient(90deg,#5b3cff 0%, #6a4cff 100%);">
-      <v-toolbar-title class="text-subtitle-1 hide-on-mobile" style="font-weight:600; letter-spacing:0.2px">FastForward Logistics Dashboard</v-toolbar-title>
-      <v-toolbar-title class="text-subtitle-1 show-on-mobile" style="font-weight:600; letter-spacing:0.2px; font-size:16px; display:none">Dashboard</v-toolbar-title>
+      <v-toolbar-title class="hide-on-mobile" style="font-weight:700; letter-spacing:0.2px; font-size:1.2rem">FastForward Logistics Dashboard</v-toolbar-title>
+      <v-toolbar-title class="show-on-mobile" style="font-weight:700; letter-spacing:0.2px; font-size:16px; display:none">Dashboard</v-toolbar-title>
       <v-spacer />
-      <v-select
-        v-model="selectedMonth"
-        :items="months"
-        dense
-        hide-details
-        style="max-width: 220px"
-        class="month-select"
-      />
+      <div class="header-control">
+        <span class="header-label">Select month</span>
+        <v-select
+          v-model="selectedMonth"
+          :items="months"
+          density="compact"
+          hide-details
+          variant="solo"
+          style="max-width: 220px"
+          class="month-select"
+        />
+      </div>
     </v-app-bar>
 
     <v-main>
@@ -35,3 +39,22 @@ provide('months', months)
     </v-footer>
   </v-app>
 </template>
+
+<style scoped>
+.header-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.header-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.month-select {
+  min-width: 180px;
+}
+</style>
